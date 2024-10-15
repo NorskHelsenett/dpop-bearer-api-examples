@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HelseId.SampleAPI.Controllers;
 
 [ApiController]
-[Authorize(Policy = Startup.AuthCodePolicy, AuthenticationSchemes = Startup.DPoPTokenAuthenticationScheme)]
+[Authorize(Policy = Startup.AuthCodePolicy, AuthenticationSchemes = Startup.BearerTokenAuthenticationScheme)]
 public class DPoPAuthCodeController : ControllerBase
 {
     private readonly IApiResponseCreator _responseCreator;
@@ -20,7 +20,7 @@ public class DPoPAuthCodeController : ControllerBase
     [Route(ConfigurationValues.AuthCodeClientResource)]
     public ActionResult<ApiResponse> GetGreetings()
     {
-        return CreateResult("Sample API (with DPoP)");
+        return CreateResult("Sample API (without DPoP)");
     }
 
     [HttpGet]

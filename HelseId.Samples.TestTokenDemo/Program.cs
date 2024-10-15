@@ -39,53 +39,78 @@ internal abstract class Program
         using var tttHttpClient = new HttpClient();
 
         tttHttpClient.DefaultRequestHeaders.Add("X-Auth-Key", config.ApiKey);
-
-        await DemoSuperman(tttHttpClient, config);
-        // await DemoPersontjenesten(tttHttpClient, config);
-        // await DemoTillitsrammeverkWithDpop(tttHttpClient, config);
-
+        
+        //await DemoDpopApi(tttHttpClient, config);
+        await DemoApi(tttHttpClient, config);
         return 0;
     }
-
-    // Generating access token for fake API/audience
-    private static async Task DemoSuperman(HttpClient tttHttpClient, TttConfig config)
+    
+    private static async Task DemoDpopApi(HttpClient tttHttpClient, TttConfig config)
     {
         var model = new TestTokenRequest
         {
-            Audience = "the_universe",
+            Audience = "nhn:DpopApi",
             ClientClaimsParameters = new ClientClaimsParameters
             {
-                ClientId = "superman",
-                ClientName = "Superman client",
-                OrgnrParent = "123456789",
-                Scope = ["save", "the_world"]
+                Scope = ["nhn:DpopApi/api"]
+            },
+            CreateDPoPTokenWithDPoPProof = true,
+            DPoPProofParameters = new DPoPProofParameters
+            {
+                HtmClaimValue = "GET",
+                HtuClaimValue = "https://localhost:5001/user-login-clients/greetings",
+
+                // Test different invalid DPoP cases:
+                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.DontSetHtuClaimValue,
+                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetIatValueInThePast,
+                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.DontSetAthClaimValue,
+                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetAlgHeaderToASymmetricAlgorithm,
+                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetAnInvalidSignature,
             },
             UserClaimsParameters = new UserClaimsParameters
             {
-                Name = "Clark Kent",
-                Pid = "20080012345",
-                SecurityLevel = "1337"
+                Name = "Julenissen",
+                SecurityLevel = "4",
+                Pid = "05898597468",
             },
-            SetSubject = true,
+            SetPidPseudonym = true,
+            GetHprNumberFromHprregisteret = true
+
+            // Test different invalid token cases:
+            // SetInvalidIssuer = true,
+            // SignJwtWithInvalidSigningKey = true,
+            // ExpirationParameters = new ExpirationParameters
+            // {
+            //     SetExpirationTimeAsExpired = true,
+            // },
         };
 
-        var (accessToken, dpopToken) = await GetAccessToken(config, tttHttpClient, model);
+        var (accessToken, dpopProof) = await GetAccessToken(config, tttHttpClient, model);
+        PrintTokens(accessToken, dpopProof);
 
-        PrintTokens(accessToken, dpopToken);
+        await ApiGet(
+            "https://localhost:5001/user-login-clients/greetings", 
+            accessToken, dpopProof
+        );
     }
 
-    // Generating access token for use with Persontjenesten
-    private static async Task DemoPersontjenesten(HttpClient tttHttpClient, TttConfig config)
+    private static async Task DemoApi(HttpClient tttHttpClient, TttConfig config)
     {
         var model = new TestTokenRequest
         {
-            Audience = "nhn:hgd-persontjenesten-api",
+            Audience = "nhn:BearerApi",
             ClientClaimsParameters = new ClientClaimsParameters
             {
-                Scope = ["nhn:hgd-persontjenesten-api/read-no-legal-basis"],
-                ClientId = "fake",
-                OrgnrParent = "123123123",
+                Scope = ["nhn:BearerApi/api"]
             },
+            UserClaimsParameters = new UserClaimsParameters
+            {
+                Name = "Julenissen",
+                SecurityLevel = "4",
+                Pid = "05898597468",
+            },
+            SetPidPseudonym = true,
+            GetHprNumberFromHprregisteret = true
 
             // Test different invalid token cases:
             // SetInvalidIssuer = true,
@@ -97,77 +122,13 @@ internal abstract class Program
         };
 
         var (accessToken, _) = await GetAccessToken(config, tttHttpClient, model);
-
         PrintTokens(accessToken);
 
-        await ApiPost(
-            "https://et.persontjenesten.test.nhn.no/api/no-legal-basis/person/get-by-nin?informationParts=Name&includeHistory=false",
-            new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("nin", "05898597468")
-            }),
+        await ApiGet(
+            "https://localhost:5002/user-login-clients/greetings", 
             accessToken
         );
     }
-
-    // Generate token with tillitsrammeverk and DPoP
-    private static async Task DemoTillitsrammeverkWithDpop(HttpClient tttHttpClient, TttConfig config)
-    {
-        var model = new TestTokenRequest
-        {
-            CreateDPoPTokenWithDPoPProof = true,
-            DPoPProofParameters = new DPoPProofParameters
-            {
-                HtmClaimValue = "GET",
-                HtuClaimValue = "https://innlogging.st1.kjernejournal-test.no/api/session/ping",
-
-                // Test different invalid DPoP cases:
-                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.DontSetHtuClaimValue,
-                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetIatValueInThePast,
-                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.DontSetAthClaimValue,
-                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetAlgHeaderToASymmetricAlgorithm,
-                // InvalidDPoPProofParameters = InvalidDPoPProofParameters.SetAnInvalidSignature,
-            },
-            Audience = "nhn:kjernejournal",
-            ClientClaimsParameters = new ClientClaimsParameters
-            {
-                Scope =
-                    ["nhn:kjernejournal/innlogging", "nhn:kjernejournal/tillitsrammeverk", "nhn:kjernejournal/api"],
-                ClientId = "fake",
-                OrgnrParent = "958935420",
-                OrgnrChild = "894234482",
-            },
-            UserClaimsParameters = new UserClaimsParameters
-            {
-                Name = "Julenissen",
-                SecurityLevel = "4",
-                Pid = "05898597468",
-            },
-            SetPidPseudonym = true,
-            GetHprNumberFromHprregisteret = true,
-            CreateTillitsrammeverkClaims = true,
-            TillitsrammeverkClaimsParameters = new TillitsrammeverkClaimsParameters()
-            {
-                PractitionerAuthorizationCode = "AA",
-                PractitionerLegalEntityId = "958935420",
-                PractitionerLegalEntityName = "Fake entity",
-                PractitionerPointOfCareId = "894234482",
-                PractitionerPointOfCareName = "Fake poc"
-            },
-        };
-
-        var (accessToken, dpopToken) = await GetAccessToken(config, tttHttpClient, model);
-        PrintTokens(accessToken, dpopToken);
-
-        await ApiGet(
-            "https://innlogging.st1.kjernejournal-test.no/api/session/ping",
-            accessToken,
-            dpopToken,
-            // Header required by Kjernejournal
-            extraHeaders: new Dictionary<string, string> { ["X-SOURCE-SYSTEM"] = "fake" }
-        );
-    }
-
     private static async Task<(string AccessToken, string? DpopToken)> GetAccessToken(TttConfig config,
         HttpClient httpClient, TestTokenRequest model)
     {

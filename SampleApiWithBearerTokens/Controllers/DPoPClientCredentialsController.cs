@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HelseId.SampleAPI.Controllers;
 
 [ApiController]
-[Authorize(Policy = Startup.ClientCredentialsPolicy, AuthenticationSchemes = Startup.DPoPTokenAuthenticationScheme)]
+[Authorize(Policy = Startup.ClientCredentialsPolicy, AuthenticationSchemes = Startup.BearerTokenAuthenticationScheme)]
 public class DPoPClientCredentialsController : ControllerBase
 {
     private readonly IApiResponseCreator _responseCreator;
