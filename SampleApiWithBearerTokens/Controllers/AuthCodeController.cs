@@ -8,10 +8,10 @@ namespace HelseId.SampleAPI.Controllers;
 
 [ApiController]
 [Authorize(Policy = Startup.AuthCodePolicy, AuthenticationSchemes = Startup.BearerTokenAuthenticationScheme)]
-public class DPoPAuthCodeController : ControllerBase
+public class AuthCodeController : ControllerBase
 {
     private readonly IApiResponseCreator _responseCreator;
-    public DPoPAuthCodeController(IApiResponseCreator responseCreator)
+    public AuthCodeController(IApiResponseCreator responseCreator)
     {
         _responseCreator = responseCreator;
     }
@@ -20,30 +20,16 @@ public class DPoPAuthCodeController : ControllerBase
     [Route(ConfigurationValues.AuthCodeClientResource)]
     public ActionResult<ApiResponse> GetGreetings()
     {
-        return CreateResult("Sample API (without DPoP)");
+        return CreateResult("Sample API (with Bearer token)");
     }
 
-    [HttpGet]
-    [Route(ConfigurationValues.ResourceIndicatorsResource1)]
-    public ActionResult<ApiResponse> GetForIndicator1()
-    {
-        return CreateResult("Sample API (indicator 1 with DPoP)");
-    }
-
-    [HttpGet]
-    [Route(ConfigurationValues.ResourceIndicatorsResource2)]
-    public ActionResult<ApiResponse> GetForIndicator2()
-    {
-        return CreateResult("Sample API (indicator 2 with DPoP)");
-    }
 
     private ActionResult<ApiResponse> CreateResult(string apiName)
     {
-        // The claims of the logged in user:
         var claims = User.Claims.ToList();
-
+        
         var apiResponse = _responseCreator.CreateApiResponse(claims, apiName);
-
+        
         return new JsonResult(apiResponse);
     }
 }

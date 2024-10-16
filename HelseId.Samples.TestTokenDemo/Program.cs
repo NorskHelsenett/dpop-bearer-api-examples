@@ -14,9 +14,6 @@ using Spectre.Console.Rendering;
 
 namespace HelseId.Samples.TestTokenDemo;
 
-// Demo code for using the Test Token Service (TTT). Should only be used for testing.
-// The examples can be adapted to your needs. Check the full request model for all options.
-// Documentation can be found at: https://utviklerportal.nhn.no/informasjonstjenester/helseid/tilgang-til-helseid/test-token-tjenesten/docs/test-token-tjenesten_enmd/
 internal abstract class Program
 {
     private static async Task<int> Main(string[] args)
@@ -40,12 +37,12 @@ internal abstract class Program
 
         tttHttpClient.DefaultRequestHeaders.Add("X-Auth-Key", config.ApiKey);
         
-        //await DemoDpopApi(tttHttpClient, config);
-        await DemoApi(tttHttpClient, config);
+        //await DemoApiDpopToken(tttHttpClient, config);
+        await DemoApiBearerToken(tttHttpClient, config);
         return 0;
     }
     
-    private static async Task DemoDpopApi(HttpClient tttHttpClient, TttConfig config)
+    private static async Task DemoApiDpopToken (HttpClient tttHttpClient, TttConfig config)
     {
         var model = new TestTokenRequest
         {
@@ -94,7 +91,7 @@ internal abstract class Program
         );
     }
 
-    private static async Task DemoApi(HttpClient tttHttpClient, TttConfig config)
+    private static async Task DemoApiBearerToken (HttpClient tttHttpClient, TttConfig config)
     {
         var model = new TestTokenRequest
         {
@@ -208,8 +205,7 @@ internal abstract class Program
             Method = HttpMethod.Get,
             RequestUri = new Uri(apiUri),
         };
-
-
+        
         if (extraHeaders != null)
         {
             foreach (var (key, value) in extraHeaders)
@@ -223,15 +219,7 @@ internal abstract class Program
         var response = await httpClient.SendAsync(message);
         await PrintResponse(response);
     }
-
-    private static async Task ApiPost(string apiUri, HttpContent content, string accessToken,
-        string? dpopToken = null)
-    {
-        using var httpClient = CreateApiClient(accessToken, dpopToken);
-        var response = await httpClient.PostAsync(apiUri, content);
-        await PrintResponse(response);
-    }
-
+    
     private static HttpClient CreateApiClient(string accessToken, string? dpopToken,
         IDictionary<string, string>? extreaHeaders = null)
     {

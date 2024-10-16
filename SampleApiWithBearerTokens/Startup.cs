@@ -110,7 +110,6 @@ public  class Startup
         {
             var testTokenProxyEndpointAddress = ConfigurationValues.TestTokenProxyUrl;
             // This injection of JavaScript code is needed in order to get the access token from the test token service proxy:
-            options.UseRequestInterceptor($"(req) => {{ return setDPoPTokenInRequest(req, '{testTokenProxyEndpointAddress}'); }} ");
             options.InjectJavascript("extend-swagger.js");
         });
 
