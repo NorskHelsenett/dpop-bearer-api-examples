@@ -183,18 +183,23 @@ internal abstract class Program
 
     private static void PrintAccessToken(string accessToken)
     {
-        PrintToken(accessToken, "Access token payload");
+        PrintToken(accessToken, "Access token", includeHeader: true);
     }
 
     private static void PrintDpopToken(string dpopToken)
     {
-        PrintToken(dpopToken, "DPoP token payload");
+        PrintToken(dpopToken, "DPoP token", includeHeader: true);
     }
 
-    private static void PrintToken(string token, string heading)
+    private static void PrintToken(string token, string heading, bool includeHeader = false)
     {
-        var payload = JwtDecoder.Decode(token);
-        PrintBorderedContent(CreateRenderableJsonText(payload), heading);
+        var (header, payload, _) = JwtDecoder.Decode(token);
+        if (includeHeader)
+        {
+            PrintBorderedContent(CreateRenderableJsonText(header), heading + " header");
+        }
+
+        PrintBorderedContent(CreateRenderableJsonText(payload), heading + " payload");
     }
 
     private static async Task ApiGet(string apiUri, string accessToken, string? dpopToken = null,

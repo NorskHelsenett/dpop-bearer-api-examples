@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -8,13 +9,14 @@ public static class JwtDecoder
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions;
 
-    public static string Decode(string jwt)
+    public static (string Header, string Payload, string Signature) Decode(string jwt)
     {
         var parts = jwt.Split(".");
-        // string header = parts[0];
+        var header = parts[0];
         var payload = parts[1];
+        var signature = parts[2];
 
-        return DecodeJwtPart(payload);
+        return (DecodeJwtPart(header), DecodeJwtPart(payload), signature);
     }
 
     private static string DecodeJwtPart(string part)
@@ -44,6 +46,7 @@ public static class JwtDecoder
             WriteIndented = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             IgnoreReadOnlyProperties = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         };
 
         JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
